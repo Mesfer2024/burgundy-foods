@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { buildDeliveryHeader, normalizeDeliveryLines, type DeliveryNoteHeaderPayload } from "@/lib/orderPayloads";
+import { buildDeliveryHeader, normalizeDeliveryLines, validateDeliveryLine, type DeliveryNoteHeaderPayload } from "@/lib/orderPayloads";
 
 async function requireSession() {
   const session = await getServerSession(authOptions);
@@ -33,6 +33,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ de
   }
   const lines = normalizeDeliveryLines((body as { lines?: unknown }).lines);
   if (lines.length === 0) return NextResponse.json({ error: "أضف بنداً واحداً على الأقل." }, { status: 400 });
+  for (let i = 0; i < lines.length; i++) {
+    const err = validateDeliveryLine(lines[i]);
+    if (err) return NextResponse.json({ error: `السطر ${i + 1}: ${err}` }, { status: 400 });
+  }
 
   const actor = session.user.email ?? null;
   const note = await prisma.$transaction(async (tx) => {

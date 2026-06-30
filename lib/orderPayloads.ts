@@ -90,16 +90,52 @@ export function normalizeQuotationLines(lines: unknown): NormalizedQuotationLine
     .filter((line): line is NormalizedQuotationLine => line !== null);
 }
 
-// Returns an Arabic error message string when the line is invalid, otherwise null.
+// ---------- Wholesale line validators ----------
 // Wholesale rule: quantity must be a positive whole number (no decimals, no zero, no negatives).
-export function validateQuotationLine(line: NormalizedQuotationLine): string | null {
-  if (!line.productId) return "المنتج مطلوب لكل بند.";
-  if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+// Helpers used by every document type so the rule and the Arabic message stay in lockstep.
+
+function checkProductId(productId: string): string | null {
+  return productId ? null : "المنتج مطلوب لكل بند.";
+}
+
+function checkIntegerQuantity(quantity: number): string | null {
+  if (!Number.isInteger(quantity) || quantity < 1) {
     return "يجب أن تكون الكمية رقماً صحيحاً أكبر من صفر";
   }
-  if (!(line.unitPriceBeforeVat > 0)) return "سعر الوحدة يجب أن يكون أكبر من صفر.";
-  if (line.discountAmount < 0) return "الخصم لا يمكن أن يكون سالباً.";
   return null;
+}
+
+function checkUnitPrice(unitPriceBeforeVat: number): string | null {
+  return unitPriceBeforeVat > 0 ? null : "سعر الوحدة يجب أن يكون أكبر من صفر.";
+}
+
+function checkDiscount(discountAmount: number): string | null {
+  return discountAmount >= 0 ? null : "الخصم لا يمكن أن يكون سالباً.";
+}
+
+export function validateQuotationLine(line: NormalizedQuotationLine): string | null {
+  return (
+    checkProductId(line.productId) ||
+    checkIntegerQuantity(line.quantity) ||
+    checkUnitPrice(line.unitPriceBeforeVat) ||
+    checkDiscount(line.discountAmount)
+  );
+}
+
+export function validateSalesOrderLine(line: NormalizedSalesOrderLine): string | null {
+  return (
+    checkProductId(line.productId) ||
+    checkIntegerQuantity(line.quantity) ||
+    checkUnitPrice(line.unitPriceBeforeVat)
+  );
+}
+
+export function validateDeliveryLine(line: NormalizedDeliveryLine): string | null {
+  return checkProductId(line.productId) || checkIntegerQuantity(line.quantity);
+}
+
+export function validateInvoiceLine(line: NormalizedInvoiceLine): string | null {
+  return validateSalesOrderLine(line);
 }
 
 export function normalizeSalesOrderLines(lines: unknown): NormalizedSalesOrderLine[] {
@@ -109,11 +145,12 @@ export function normalizeSalesOrderLines(lines: unknown): NormalizedSalesOrderLi
       const line = raw as LinePayload;
       const productId = optionalText(line.productId);
       if (!productId) return null;
+      // Pass values through verbatim; validateSalesOrderLine() enforces correctness.
       return {
         productId,
-        quantity: Math.max(0, numberValue(line.quantity)),
+        quantity: numberValue(line.quantity),
         quantityType: normalizeQuantityType(line.quantityType),
-        unitPriceBeforeVat: Math.max(0, numberValue(line.unitPriceBeforeVat)),
+        unitPriceBeforeVat: numberValue(line.unitPriceBeforeVat),
         notes: optionalText(line.notes),
       };
     })
@@ -127,9 +164,10 @@ export function normalizeDeliveryLines(lines: unknown): NormalizedDeliveryLine[]
       const line = raw as LinePayload;
       const productId = optionalText(line.productId);
       if (!productId) return null;
+      // Pass values through verbatim; validateDeliveryLine() enforces correctness.
       return {
         productId,
-        quantity: Math.max(0, numberValue(line.quantity)),
+        quantity: numberValue(line.quantity),
         quantityType: normalizeQuantityType(line.quantityType),
         batchNumber: optionalText(line.batchNumber),
         expiryDate: optionalDate(line.expiryDate),

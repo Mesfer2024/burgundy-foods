@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { buildInvoiceHeader, normalizeInvoiceLines, type InvoiceHeaderPayload } from "@/lib/orderPayloads";
+import { buildInvoiceHeader, normalizeInvoiceLines, validateInvoiceLine, type InvoiceHeaderPayload } from "@/lib/orderPayloads";
 import { computeHeaderTotals, getEffectiveVatRate, lineTotalBeforeVat, round2 } from "@/lib/orderMath";
 import { nextSequenceNumber } from "@/lib/sequenceNumber";
 
@@ -36,6 +36,10 @@ export async function POST(request: Request) {
   if (!header.customerId) return NextResponse.json({ error: "العميل مطلوب." }, { status: 400 });
   const lines = normalizeInvoiceLines((body as { lines?: unknown }).lines);
   if (lines.length === 0) return NextResponse.json({ error: "أضف بنداً واحداً على الأقل." }, { status: 400 });
+  for (let i = 0; i < lines.length; i++) {
+    const err = validateInvoiceLine(lines[i]);
+    if (err) return NextResponse.json({ error: `السطر ${i + 1}: ${err}` }, { status: 400 });
+  }
 
   const vatRate = await getEffectiveVatRate(header.vatRateRequested);
   const totals = computeHeaderTotals({

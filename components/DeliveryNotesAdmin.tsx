@@ -33,11 +33,22 @@ type DeliveryNote = {
   lines: (Omit<DeliveryLine, "expiryDate"> & { id: string; expiryDate: string | Date | null })[];
 };
 
-const QTY_TYPES = ["unit", "carton", "pallet", "container"];
-const STATUSES = ["pending", "dispatched", "delivered", "returned", "cancelled"];
+const QTY_TYPES = ["unit", "carton", "pallet", "container"] as const;
+const QTY_TYPE_LABEL_AR: Record<(typeof QTY_TYPES)[number], string> = {
+  unit: "وحدة",
+  carton: "كرتون",
+  pallet: "طبلية",
+  container: "كونتينر",
+};
+const STATUSES = ["pending", "dispatched", "delivered", "returned", "cancelled"] as const;
 
 const emptyLine = (): DeliveryLine => ({
-  productId: "", quantity: 0, quantityType: "carton", batchNumber: "", expiryDate: "", notes: "",
+  productId: "",
+  quantity: 1,
+  quantityType: "carton",
+  batchNumber: "",
+  expiryDate: "",
+  notes: "",
 });
 
 function formatDate(value: string | Date | null) {
@@ -46,8 +57,19 @@ function formatDate(value: string | Date | null) {
   return Number.isNaN(date.valueOf()) ? "" : date.toISOString().slice(0, 10);
 }
 
+function validateLine(line: DeliveryLine): string | null {
+  if (!line.productId) return "المنتج مطلوب";
+  if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+    return "يجب أن تكون الكمية رقماً صحيحاً أكبر من صفر";
+  }
+  return null;
+}
+
 export default function DeliveryNotesAdmin({
-  initialNotes, customers, products, salesOrders,
+  initialNotes,
+  customers,
+  products,
+  salesOrders,
 }: {
   initialNotes: DeliveryNote[];
   customers: Customer[];
@@ -70,47 +92,98 @@ export default function DeliveryNotesAdmin({
   const [saving, setSaving] = useState(false);
 
   function resetForm() {
-    setEditingId(null); setSalesOrderId(""); setCustomerId("");
-    setWarehouseName(""); setDeliveryDate(new Date().toISOString().slice(0, 10));
-    setDriverName(""); setVehiclePlate(""); setDeliveryStatus("pending");
-    setReceivedBy(""); setNotesText(""); setLines([emptyLine()]);
+    setEditingId(null);
+    setSalesOrderId("");
+    setCustomerId("");
+    setWarehouseName("");
+    setDeliveryDate(new Date().toISOString().slice(0, 10));
+    setDriverName("");
+    setVehiclePlate("");
+    setDeliveryStatus("pending");
+    setReceivedBy("");
+    setNotesText("");
+    setLines([emptyLine()]);
   }
 
   function handleEdit(note: DeliveryNote) {
-    setEditingId(note.id); setSalesOrderId(note.salesOrderId); setCustomerId(note.customerId);
+    setEditingId(note.id);
+    setSalesOrderId(note.salesOrderId);
+    setCustomerId(note.customerId);
     setWarehouseName(note.warehouseName ?? "");
     setDeliveryDate(formatDate(note.deliveryDate));
-    setDriverName(note.driverName ?? ""); setVehiclePlate(note.vehiclePlate ?? "");
-    setDeliveryStatus(note.deliveryStatus); setReceivedBy(note.receivedBy ?? "");
+    setDriverName(note.driverName ?? "");
+    setVehiclePlate(note.vehiclePlate ?? "");
+    setDeliveryStatus(note.deliveryStatus);
+    setReceivedBy(note.receivedBy ?? "");
     setNotesText(note.notes ?? "");
-    setLines(note.lines.map((l) => ({
-      productId: l.productId, quantity: l.quantity, quantityType: l.quantityType,
-      batchNumber: l.batchNumber ?? "", expiryDate: formatDate(l.expiryDate), notes: l.notes ?? "",
-    })));
+    setLines(
+      note.lines.map((l) => ({
+        productId: l.productId,
+        quantity: l.quantity,
+        quantityType: l.quantityType,
+        batchNumber: l.batchNumber ?? "",
+        expiryDate: formatDate(l.expiryDate),
+        notes: l.notes ?? "",
+      })),
+    );
     setStatus(null);
+  }
+
+  function updateLine(index: number, patch: Partial<DeliveryLine>) {
+    setLines((current) => current.map((l, i) => (i === index ? { ...l, ...patch } : l)));
+  }
+
+  function removeLine(index: number) {
+    setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true); setStatus(null);
+    setStatus(null);
+    if (!salesOrderId || !customerId) {
+      setStatus("أمر البيع والعميل مطلوبان.");
+      return;
+    }
+    for (let i = 0; i < lines.length; i++) {
+      const err = validateLine(lines[i]);
+      if (err) {
+        setStatus(`السطر ${i + 1}: ${err}`);
+        return;
+      }
+    }
+
+    setSaving(true);
     const url = editingId ? `/api/admin/delivery-notes/${editingId}` : "/api/admin/delivery-notes";
     const method = editingId ? "PATCH" : "POST";
     const response = await fetch(url, {
-      method, headers: { "Content-Type": "application/json" },
+      method,
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        salesOrderId, customerId, warehouseName, deliveryDate, driverName, vehiclePlate,
-        deliveryStatus, receivedBy, notes: notesText,
-        lines: lines.filter((l) => l.productId && l.quantity > 0).map((l) => ({
-          productId: l.productId, quantity: l.quantity, quantityType: l.quantityType,
-          batchNumber: l.batchNumber, expiryDate: l.expiryDate || null, notes: l.notes,
+        salesOrderId,
+        customerId,
+        warehouseName,
+        deliveryDate,
+        driverName,
+        vehiclePlate,
+        deliveryStatus,
+        receivedBy,
+        notes: notesText,
+        lines: lines.map((l) => ({
+          productId: l.productId,
+          quantity: l.quantity,
+          quantityType: l.quantityType,
+          batchNumber: l.batchNumber,
+          expiryDate: l.expiryDate || null,
+          notes: l.notes,
         })),
       }),
     });
     if (response.ok) {
       const data = await response.json();
-      if (editingId) setNotes((c) => c.map((n) => n.id === data.id ? data : n));
+      if (editingId) setNotes((c) => c.map((n) => (n.id === data.id ? data : n)));
       else setNotes((c) => [data, ...c]);
-      setStatus(`تم حفظ ${data.deliveryNoteNumber}.`); resetForm();
+      setStatus(`تم حفظ ${data.deliveryNoteNumber}.`);
+      resetForm();
     } else {
       const err = await response.json().catch(() => null);
       setStatus(err?.error ?? "تعذر حفظ سند التسليم.");
@@ -121,10 +194,13 @@ export default function DeliveryNotesAdmin({
   async function handleDelete(id: string) {
     if (!confirm("حذف سند التسليم؟")) return;
     const response = await fetch(`/api/admin/delivery-notes/${id}`, { method: "DELETE" });
-    if (!response.ok) { setStatus("تعذر حذف السند."); return; }
+    if (!response.ok) {
+      setStatus("تعذر حذف السند.");
+      return;
+    }
     const data = await response.json();
     if (data.archived && data.deliveryNote) {
-      setNotes((c) => c.map((n) => n.id === id ? { ...n, ...data.deliveryNote } : n));
+      setNotes((c) => c.map((n) => (n.id === id ? { ...n, ...data.deliveryNote } : n)));
       setStatus("تم تعيين السند كملغى.");
     } else {
       setNotes((c) => c.filter((n) => n.id !== id));
@@ -140,78 +216,158 @@ export default function DeliveryNotesAdmin({
 
   return (
     <div className="space-y-8">
-      <form onSubmit={handleSubmit} className="data-card space-y-6 p-8">
+      <form onSubmit={handleSubmit} className="data-card space-y-6 p-8" noValidate>
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold text-foreground">{editingId ? "تعديل سند تسليم" : "إنشاء سند تسليم"}</h2>
-            <p className="mt-2 text-sm text-muted">رقم تسلسلي تلقائي DN-YYYY-0001.</p>
+            <p className="mt-2 text-sm text-muted">
+              رقم تسلسلي تلقائي <span dir="ltr">DN-YYYY-0001</span>. الكميات يجب أن تكون أعداداً صحيحة موجبة (1 أو أكثر).
+            </p>
           </div>
-          {editingId ? <button type="button" onClick={() => { resetForm(); setStatus(null); }} className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"><X className="h-4 w-4" />إلغاء</button> : null}
+          {editingId ? (
+            <button
+              type="button"
+              onClick={() => {
+                resetForm();
+                setStatus(null);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm"
+            >
+              <X className="h-4 w-4" />إلغاء
+            </button>
+          ) : null}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <label className="space-y-2 text-sm text-foreground">أمر البيع
+          <label className="space-y-2 text-sm text-foreground">
+            أمر البيع
             <select value={salesOrderId} onChange={(e) => handleSalesOrderChange(e.target.value)} required className="w-full rounded-3xl border border-border bg-background px-4 py-3">
               <option value="">— اختر —</option>
-              {salesOrders.map((o) => <option key={o.id} value={o.id}>{o.salesOrderNumber}</option>)}
+              {salesOrders.map((o) => (
+                <option key={o.id} value={o.id}>{o.salesOrderNumber}</option>
+              ))}
             </select>
           </label>
-          <label className="space-y-2 text-sm text-foreground">العميل
+          <label className="space-y-2 text-sm text-foreground">
+            العميل
             <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} required className="w-full rounded-3xl border border-border bg-background px-4 py-3">
               <option value="">— اختر —</option>
-              {customers.map((c) => <option key={c.id} value={c.id}>{c.companyName ? `${c.companyName} — ${c.name}` : c.name}</option>)}
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>{c.companyName ? `${c.companyName} — ${c.name}` : c.name}</option>
+              ))}
             </select>
           </label>
-          <label className="space-y-2 text-sm text-foreground">تاريخ التسليم
+          <label className="space-y-2 text-sm text-foreground">
+            تاريخ التسليم
             <input type="date" value={deliveryDate} onChange={(e) => setDeliveryDate(e.target.value)} required className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
-          <label className="space-y-2 text-sm text-foreground">حالة التسليم
+          <label className="space-y-2 text-sm text-foreground">
+            حالة التسليم
             <select value={deliveryStatus} onChange={(e) => setDeliveryStatus(e.target.value)} className="w-full rounded-3xl border border-border bg-background px-4 py-3">
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </label>
-          <label className="space-y-2 text-sm text-foreground">المستودع
+          <label className="space-y-2 text-sm text-foreground">
+            المستودع
             <input value={warehouseName} onChange={(e) => setWarehouseName(e.target.value)} className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
-          <label className="space-y-2 text-sm text-foreground">السائق
+          <label className="space-y-2 text-sm text-foreground">
+            السائق
             <input value={driverName} onChange={(e) => setDriverName(e.target.value)} className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
-          <label className="space-y-2 text-sm text-foreground">رقم لوحة المركبة
+          <label className="space-y-2 text-sm text-foreground">
+            رقم لوحة المركبة
             <input value={vehiclePlate} onChange={(e) => setVehiclePlate(e.target.value)} className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
-          <label className="space-y-2 text-sm text-foreground">المستلم
+          <label className="space-y-2 text-sm text-foreground">
+            المستلم
             <input value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
-          <label className="space-y-2 text-sm text-foreground lg:col-span-2">ملاحظات
+          <label className="space-y-2 text-sm text-foreground lg:col-span-2">
+            ملاحظات
             <textarea value={notesText} onChange={(e) => setNotesText(e.target.value)} rows={2} className="w-full rounded-3xl border border-border bg-background px-4 py-3" />
           </label>
         </div>
 
-        <div className="space-y-3 border-t border-border pt-6">
+        <div className="space-y-4 border-t border-border pt-6">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-foreground">بنود السند</h3>
             <button type="button" onClick={() => setLines((c) => [...c, emptyLine()])} className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">
               <Plus className="h-4 w-4" />إضافة بند
             </button>
           </div>
+
           {lines.map((line, index) => (
-            <div key={index} className="rounded-lg border border-border bg-background p-4">
-              <div className="grid gap-3 lg:grid-cols-12">
-                <select value={line.productId} onChange={(e) => setLines((c) => c.map((l, i) => i === index ? { ...l, productId: e.target.value } : l))} required className="lg:col-span-3 rounded-xl border border-border bg-background px-3 py-2 text-sm">
-                  <option value="">— المنتج —</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.nameAr}</option>)}
-                </select>
-                <input type="number" min="0" step="0.01" placeholder="الكمية" value={line.quantity} onChange={(e) => setLines((c) => c.map((l, i) => i === index ? { ...l, quantity: Number(e.target.value) } : l))} className="lg:col-span-2 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
-                <select value={line.quantityType} onChange={(e) => setLines((c) => c.map((l, i) => i === index ? { ...l, quantityType: e.target.value } : l))} className="lg:col-span-1 rounded-xl border border-border bg-background px-3 py-2 text-sm">
-                  {QTY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <input placeholder="رقم الدفعة" value={line.batchNumber} onChange={(e) => setLines((c) => c.map((l, i) => i === index ? { ...l, batchNumber: e.target.value } : l))} className="lg:col-span-2 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
-                <input type="date" placeholder="انتهاء الصلاحية" value={line.expiryDate} onChange={(e) => setLines((c) => c.map((l, i) => i === index ? { ...l, expiryDate: e.target.value } : l))} className="lg:col-span-3 rounded-xl border border-border bg-background px-3 py-2 text-sm" />
-                <button type="button" onClick={() => setLines((c) => c.filter((_, i) => i !== index))} className="lg:col-span-1 inline-flex items-center justify-center rounded-xl border border-red-400 px-2 py-2 text-red-600">
-                  <Trash2 className="h-4 w-4" />
-                </button>
+            <fieldset key={index} className="rounded-lg border border-border bg-background p-4">
+              <legend className="px-2 text-xs font-semibold text-primary">السطر {index + 1}</legend>
+              <div className="grid gap-4 lg:grid-cols-[2.4fr_0.9fr_0.7fr_1.2fr_1.4fr_auto]">
+                <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+                  المنتج
+                  <select value={line.productId} onChange={(e) => updateLine(index, { productId: e.target.value })} required className="rounded-xl border border-border bg-background px-3 py-2 text-sm">
+                    <option value="">— اختر —</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>{p.nameAr}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+                  نوع الكمية
+                  <select value={line.quantityType} onChange={(e) => updateLine(index, { quantityType: e.target.value })} className="rounded-xl border border-border bg-background px-3 py-2 text-sm">
+                    {QTY_TYPES.map((t) => <option key={t} value={t}>{QTY_TYPE_LABEL_AR[t]}</option>)}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+                  الكمية
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    inputMode="numeric"
+                    required
+                    value={line.quantity}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const parsed = raw === "" ? 0 : Math.floor(Number(raw));
+                      updateLine(index, { quantity: Number.isFinite(parsed) ? parsed : 0 });
+                    }}
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+                  رقم الدفعة <span className="text-muted">(اختياري)</span>
+                  <input
+                    value={line.batchNumber}
+                    onChange={(e) => updateLine(index, { batchNumber: e.target.value })}
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <label className="flex flex-col gap-1 text-xs font-medium text-foreground">
+                  تاريخ انتهاء الصلاحية <span className="text-muted">(اختياري)</span>
+                  <input
+                    type="date"
+                    value={line.expiryDate}
+                    onChange={(e) => updateLine(index, { expiryDate: e.target.value })}
+                    className="rounded-xl border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </label>
+
+                <div className="flex items-end">
+                  <button
+                    type="button"
+                    onClick={() => removeLine(index)}
+                    disabled={lines.length === 1}
+                    aria-label="حذف البند"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-400 text-red-600 disabled:opacity-40"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
               </div>
-            </div>
+            </fieldset>
           ))}
         </div>
 
@@ -226,13 +382,22 @@ export default function DeliveryNotesAdmin({
       <div className="data-card p-8">
         <h2 className="text-2xl font-semibold text-foreground">سندات التسليم</h2>
         <div className="mt-6 grid gap-3">
-          {notes.length === 0 ? <p className="text-sm text-muted">لا توجد سندات بعد.</p> : (
+          {notes.length === 0 ? (
+            <p className="text-sm text-muted">لا توجد سندات بعد.</p>
+          ) : (
             notes.map((n) => (
               <div key={n.id} className="rounded-lg border border-border bg-background p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <p className="font-semibold text-foreground">{n.deliveryNoteNumber} — {n.customer.companyName || n.customer.name}</p>
-                    <p className="text-xs text-muted">أمر البيع {n.salesOrder?.salesOrderNumber ?? "—"} • {formatDate(n.deliveryDate)} • {n.lines.length} بند</p>
+                    <p className="font-semibold text-foreground">
+                      <span dir="ltr" className="inline-block">{n.deliveryNoteNumber}</span>
+                      <span className="mx-2 text-muted">—</span>
+                      {n.customer.companyName || n.customer.name}
+                    </p>
+                    <p className="text-xs text-muted">
+                      أمر البيع <span dir="ltr">{n.salesOrder?.salesOrderNumber ?? "—"}</span>{" "}•{" "}
+                      <span dir="ltr">{formatDate(n.deliveryDate)}</span> • {n.lines.length} بند
+                    </p>
                     <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{n.deliveryStatus}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
