@@ -3,6 +3,10 @@ import SiteFooter from "@/components/SiteFooter";
 import prisma from "@/lib/prisma";
 import ProductsCatalog from "@/components/ProductsCatalog";
 
+// Force per-request rendering so the public catalog reflects admin edits
+// to the verified-product set without requiring a redeploy.
+export const dynamic = "force-dynamic";
+
 export default async function ProductsPage() {
   const products = process.env.DATABASE_URL
     ? await prisma.product.findMany({
