@@ -1,0 +1,428 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  role           String    @default("SALES")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model CompanySetting {
+  id              Int      @id @default(autoincrement())
+  nameAr          String   @default("مؤسسة برغندي للأغذية")
+  nameEn          String   @default("Burgundy Foods Establishment")
+  phone           String?
+  email           String?
+  address         String?
+  tradeLicense    String?
+  taxNumber       String?
+  logoUrl         String?
+  brandColor      String?  @default("#7c1d34")
+  description     String?  @default("نعمل على تجهيز عملياتنا اللوجستية في الرياض لخدمة قطاع الجملة والتجزئة داخل المملكة.")
+  vatEnabled      Boolean  @default(false)
+  defaultVatRate  Float    @default(15)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Product {
+  id                   String   @id @default(cuid())
+  sku                  String?  @unique
+  internalSku          String?  @unique
+  supplierSku          String?
+  barcode              String?  @unique
+  nameAr               String
+  nameEn               String
+  type                 String
+  weight               String?
+  unitWeightGrams      Int?
+  packSize             String?
+  packsPerCarton       Int?
+  unitsPerCarton       Int?
+  cartonsPerPallet     Int?
+  palletsPerContainer  Int?
+  cartonsPerContainer  Int?
+  minimumOrderQuantity Int?
+  originCountry        String?
+  imageUrl             String?
+  cartonPurchase       Float    @default(0)
+  cartonSale           Float    @default(0)
+  shippingCost         Float    @default(0)
+  customsCost          Float    @default(0)
+  totalCost            Float    @default(0)
+  marginPercent        Float    @default(0)
+  active               Boolean  @default(true)
+  isVerified           Boolean  @default(false)
+  supplierId           String?
+  supplier             Supplier? @relation(fields: [supplierId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  createdBy            String?
+  updatedBy            String?
+  inventoryBatches     InventoryBatch[]
+  orderItems           OrderItem[]
+  quotationLines       QuotationLine[]
+  salesOrderLines      SalesOrderLine[]
+  deliveryNoteLines    DeliveryNoteLine[]
+  invoiceLines         InvoiceLine[]
+}
+
+model Supplier {
+  id           String   @id @default(cuid())
+  nameAr       String
+  nameEn       String?
+  type         String?
+  country      String?
+  city         String?
+  contactName  String?
+  phone        String?
+  email        String?
+  address      String?
+  taxNumber    String?
+  notes        String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+  updatedBy    String?
+  products     Product[]
+}
+
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  companyName    String?
+  type           String
+  city           String
+  taxNumber      String?
+  tradeLicense   String?
+  phone          String
+  email          String?
+  address        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+  orders         Order[]
+  quotations     Quotation[]
+  salesOrders    SalesOrder[]
+  deliveryNotes  DeliveryNote[]
+  invoices       Invoice[]
+  payments       PaymentReceipt[]
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  status      String      @default("NEW")
+  totalAmount Float       @default(0)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdBy   String?
+  updatedBy   String?
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id         String  @id @default(cuid())
+  orderId    String
+  productId  String
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
+}
+
+model QuoteRequest {
+  id            String   @id @default(cuid())
+  customerName  String
+  companyName   String?
+  city          String
+  phone         String
+  email         String
+  customerType  String
+  items         String
+  notes         String?
+  status        String   @default("NEW")
+  createdAt     DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+model InventoryBatch {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  shipmentNumber String
+  arrivalDate    DateTime?
+  supplier       String?
+  cartonQty      Int      @default(0)
+  packQty        Int      @default(0)
+  productionDate DateTime?
+  expiryDate     DateTime?
+  batchNumber    String?
+  warehouse      String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      String?
+  updatedBy      String?
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  type        String
+  category    String?
+  amount      Float
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+// Phase 2A — Wholesale order documentation workflow
+// Quotation -> SalesOrder -> DeliveryNote -> Invoice -> PaymentReceipt
+// All money fields are stored before VAT; VAT is computed at header level
+// from the company's configured defaultVatRate when vatEnabled is true.
+
+model Quotation {
+  id                String          @id @default(cuid())
+  quotationNumber   String          @unique
+  customerId        String
+  customer          Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  issueDate         DateTime        @default(now())
+  expiryDate        DateTime?
+  status            String          @default("draft") // draft | sent | accepted | rejected | expired
+  notes             String?
+  subtotalBeforeVat Float           @default(0)
+  discountAmount    Float           @default(0)
+  vatRate           Float           @default(0)
+  vatAmount         Float           @default(0)
+  totalAmount       Float           @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  lines             QuotationLine[]
+  salesOrders       SalesOrder[]
+}
+
+model QuotationLine {
+  id                  String    @id @default(cuid())
+  quotationId         String
+  quotation           Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity            Float     @default(0)
+  quantityType        String    @default("carton") // unit | carton | pallet | container
+  unitPriceBeforeVat  Float     @default(0)
+  discountAmount      Float     @default(0)
+  lineTotalBeforeVat  Float     @default(0)
+  notes               String?
+}
+
+model SalesOrder {
+  id                    String           @id @default(cuid())
+  salesOrderNumber      String           @unique
+  quotationId           String?
+  quotation             Quotation?       @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  customerId            String
+  customer              Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  orderDate             DateTime         @default(now())
+  expectedDeliveryDate  DateTime?
+  status                String           @default("draft") // draft | confirmed | preparing | delivered | cancelled
+  subtotalBeforeVat     Float            @default(0)
+  discountAmount        Float            @default(0)
+  vatRate               Float            @default(0)
+  vatAmount             Float            @default(0)
+  totalAmount           Float            @default(0)
+  notes                 String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  createdBy             String?
+  updatedBy             String?
+  lines                 SalesOrderLine[]
+  deliveryNotes         DeliveryNote[]
+  invoices              Invoice[]
+}
+
+model SalesOrderLine {
+  id                  String     @id @default(cuid())
+  salesOrderId        String
+  salesOrder          SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity            Float      @default(0)
+  quantityType        String     @default("carton")
+  unitPriceBeforeVat  Float      @default(0)
+  lineTotalBeforeVat  Float      @default(0)
+  notes               String?
+}
+
+model DeliveryNote {
+  id                  String             @id @default(cuid())
+  deliveryNoteNumber  String             @unique
+  salesOrderId        String
+  salesOrder          SalesOrder         @relation(fields: [salesOrderId], references: [id], onDelete: Restrict)
+  customerId          String
+  customer            Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  warehouseName       String?
+  deliveryDate        DateTime           @default(now())
+  driverName          String?
+  vehiclePlate        String?
+  deliveryStatus      String             @default("pending") // pending | dispatched | delivered | returned | cancelled
+  receivedBy          String?
+  notes               String?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  createdBy           String?
+  updatedBy           String?
+  lines               DeliveryNoteLine[]
+  invoices            Invoice[]
+}
+
+model DeliveryNoteLine {
+  id              String       @id @default(cuid())
+  deliveryNoteId  String
+  deliveryNote    DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity        Float        @default(0)
+  quantityType    String       @default("carton")
+  batchNumber     String?
+  expiryDate      DateTime?
+  notes           String?
+}
+
+model Invoice {
+  id                String           @id @default(cuid())
+  invoiceNumber     String           @unique
+  salesOrderId      String?
+  salesOrder        SalesOrder?      @relation(fields: [salesOrderId], references: [id], onDelete: SetNull)
+  deliveryNoteId    String?
+  deliveryNote      DeliveryNote?    @relation(fields: [deliveryNoteId], references: [id], onDelete: SetNull)
+  customerId        String
+  customer          Customer         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  invoiceDate       DateTime         @default(now())
+  dueDate           DateTime?
+  status            String           @default("draft") // draft | issued | partially_paid | paid | cancelled
+  subtotalBeforeVat Float            @default(0)
+  discountAmount    Float            @default(0)
+  vatRate           Float            @default(0)
+  vatAmount         Float            @default(0)
+  totalAmount       Float            @default(0)
+  amountPaid        Float            @default(0)
+  balanceDue        Float            @default(0)
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  createdBy         String?
+  updatedBy         String?
+  lines             InvoiceLine[]
+  payments          PaymentReceipt[]
+}
+
+model InvoiceLine {
+  id                  String  @id @default(cuid())
+  invoiceId           String
+  invoice             Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId           String
+  product             Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity            Float   @default(0)
+  quantityType        String  @default("carton")
+  unitPriceBeforeVat  Float   @default(0)
+  lineTotalBeforeVat  Float   @default(0)
+  notes               String?
+}
+
+model PaymentReceipt {
+  id              String    @id @default(cuid())
+  receiptNumber   String    @unique
+  invoiceId       String?
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  customerId      String
+  customer        Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  paymentDate     DateTime  @default(now())
+  amount          Float
+  paymentMethod   String    @default("bank_transfer") // bank_transfer | cash | mada | other
+  bankAccount     String?
+  referenceNumber String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  updatedBy       String?
+}
+
+model OrderAttachment {
+  id          String   @id @default(cuid())
+  relatedType String   // quotation | sales_order | delivery_note | invoice | payment
+  relatedId   String
+  fileName    String
+  fileUrl     String
+  fileType    String?
+  notes       String?
+  uploadedAt  DateTime @default(now())
+  uploadedBy  String?
+
+  @@index([relatedType, relatedId])
+}

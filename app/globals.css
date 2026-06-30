@@ -1,26 +1,831 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f3ee;
+  --foreground: #171312;
+  --muted: #6a625c;
+  --surface: #fffdf8;
+  --surface-soft: #ebe5d9;
+  --border: #ded0bd;
+  --primary: #7b102c;
+  --primary-dark: #4f0819;
+  --accent: #d6ad46;
+  --pasta: #f2c541;
+  --ink: #12100f;
+  --fresh: #1a6c55;
+  --info: #2e5d82;
+  --danger: #b42318;
+  --shadow: 0 24px 64px rgba(23, 19, 18, 0.13);
+  --shadow-soft: 0 10px 26px rgba(23, 19, 18, 0.08);
+}
+
+.dark {
+  --background: #0f0d0c;
+  --foreground: #f7f0e6;
+  --muted: #cfc2b3;
+  --surface: #191615;
+  --surface-soft: #221e1b;
+  --border: #3d342c;
+  --primary: #d18a9c;
+  --primary-dark: #f0b8c4;
+  --accent: #d8b259;
+  --pasta: #f0c747;
+  --ink: #0b0a09;
+  --fresh: #72b6a1;
+  --info: #87a9d9;
+  --danger: #ff8a7a;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.36);
+  --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-primary), sans-serif;
+  min-height: 100vh;
+  transition: background-color 180ms ease, color 180ms ease;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--foreground);
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 7%, transparent), transparent 36%),
+    linear-gradient(315deg, color-mix(in srgb, var(--pasta) 18%, transparent), transparent 30%);
+}
+
+.bg-white {
+  background-color: var(--surface) !important;
+}
+
+.bg-background {
+  background-color: var(--background) !important;
+}
+
+.bg-surface-soft {
+  background-color: var(--surface-soft) !important;
+}
+
+.text-muted {
+  color: var(--muted) !important;
+}
+
+.border-border {
+  border-color: var(--border) !important;
+}
+
+.text-primary {
+  color: var(--primary) !important;
+}
+
+.text-primary-dark {
+  color: var(--primary-dark) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+.border-primary {
+  border-color: var(--primary) !important;
+}
+
+.hover\:bg-primary-dark:hover {
+  background-color: var(--primary-dark) !important;
+}
+
+input,
+textarea,
+select {
+  color: var(--foreground);
+  caret-color: var(--primary);
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 72%, white);
+  outline-offset: 3px;
+}
+
+.rounded-\[32px\],
+.rounded-\[28px\],
+.rounded-3xl {
+  border-radius: 0.5rem !important;
+}
+
+.shadow-\[var\(--shadow\)\] {
+  box-shadow: var(--shadow) !important;
+}
+
+.app-band {
+  border-block: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  color: var(--foreground);
+}
+
+.data-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.brand-shell {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(214, 173, 70, 0.22), transparent 28%),
+    radial-gradient(circle at 78% 34%, rgba(123, 16, 44, 0.28), transparent 34%),
+    linear-gradient(135deg, #15100f 0%, #261316 48%, #090807 100%);
+  color: #fff7e9;
+}
+
+.brand-logo-disc {
+  border: 1px solid rgba(214, 173, 70, 0.65);
+  background: #0f0d0c;
+  box-shadow: 0 0 0 4px rgba(214, 173, 70, 0.08);
+}
+
+.brand-footer {
+  background:
+    radial-gradient(circle at 12% 18%, rgba(214, 173, 70, 0.10), transparent 38%),
+    radial-gradient(circle at 88% 88%, rgba(123, 16, 44, 0.22), transparent 42%),
+    linear-gradient(180deg, #100a0c 0%, #1a0e12 55%, #0a0708 100%);
+  color: #fff7e9;
+}
+
+.brand-kicker {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.hero-product-stage {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid rgba(214, 173, 70, 0.35);
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02)),
+    radial-gradient(circle at 50% 66%, rgba(242, 197, 65, 0.22), transparent 34%);
+  box-shadow: 0 36px 100px rgba(0, 0, 0, 0.36);
+}
+
+.hero-product-stage::before {
+  position: absolute;
+  inset: auto 10% 10% 10%;
+  height: 34%;
+  content: "";
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.38);
+  filter: blur(28px);
+}
+
+.social-showcase {
+  position: relative;
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  gap: 14px;
+  min-height: 510px;
+}
+
+.social-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(214, 173, 70, 0.28);
+  border-radius: 0.5rem;
+  background: #15100f;
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.28);
+}
+
+.social-card::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, transparent 48%, rgba(12, 8, 8, 0.74));
+  pointer-events: none;
+}
+
+.social-card-primary {
+  min-height: 510px;
+}
+
+.social-card-stack {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 14px;
+}
+
+.social-card-small {
+  min-height: 248px;
+}
+
+.social-card-detail {
+  min-height: 248px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(242, 197, 65, 0.22), transparent 42%),
+    #15100f;
+}
+
+.social-card-header,
+.social-card-footer {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff8e8;
+}
+
+.social-card-header {
+  top: 14px;
+  inset-inline: 14px;
+  justify-content: space-between;
+}
+
+.social-card-footer {
+  bottom: 14px;
+  inset-inline: 14px;
+  justify-content: space-between;
+}
+
+.social-handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.social-handle-mark {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(214, 173, 70, 0.75);
+  border-radius: 999px;
+  background: #080706;
+}
+
+.social-caption {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  padding: 8px 12px;
+  color: #fff7e9;
+  font-size: 0.78rem;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+
+.story-strip {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.story-bubble {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(214, 173, 70, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  padding: 8px 12px;
+  color: #fff8e8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+}
+
+.story-ring {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background:
+    linear-gradient(#15100f, #15100f) padding-box,
+    linear-gradient(135deg, var(--primary), var(--accent), var(--pasta)) border-box;
+}
+
+.instagram-feed-band {
+  border-bottom: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--accent)), var(--background) 72%),
+    var(--background);
+}
+
+.instagram-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  direction: rtl;
+}
+
+.instagram-section-head h2 {
+  margin-top: 10px;
+  color: var(--foreground);
+  font-size: 2.35rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.instagram-section-head p:not(.brand-kicker) {
+  max-width: 620px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.instagram-feed-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 10px 14px;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: var(--shadow-soft);
+}
+
+.instagram-reel-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  direction: rtl;
+}
+
+.instagram-feed-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  direction: ltr;
+  box-shadow: var(--shadow-soft);
+}
+
+.instagram-original-frame,
+.instagram-art-card {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: #140f0f;
+}
+
+.instagram-art-card {
+  isolation: isolate;
+  color: #fff8ec;
+}
+
+.instagram-art-card::before,
+.instagram-art-card::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.instagram-art-stadium {
+  background:
+    linear-gradient(180deg, #060815 0%, #111945 48%, #166041 49%, #0f4b34 100%);
+}
+
+.instagram-art-stadium::before {
+  inset: 28% -14% auto;
+  height: 34%;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.58), transparent 22%),
+    linear-gradient(270deg, transparent, rgba(151, 104, 255, 0.58), transparent 24%);
+  filter: blur(16px);
+}
+
+.instagram-art-stadium::after {
+  inset-inline: -20%;
+  bottom: 0;
+  height: 28%;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 1px, transparent 1px 54px);
+  opacity: 0.45;
+}
+
+.instagram-art-quality {
+  background:
+    linear-gradient(180deg, #6f0c28 0%, #9b1235 62%, #f1d6a6 100%);
+}
+
+.instagram-art-quality::after {
+  inset-inline: -18%;
+  bottom: -7%;
+  height: 30%;
+  background:
+    linear-gradient(14deg, transparent 24%, rgba(130, 78, 23, 0.24) 25% 27%, transparent 28%),
+    linear-gradient(170deg, transparent 24%, rgba(130, 78, 23, 0.2) 25% 27%, transparent 28%);
+}
+
+.instagram-art-table {
+  background:
+    linear-gradient(180deg, rgba(44, 32, 24, 0.88), rgba(139, 93, 51, 0.68)),
+    linear-gradient(90deg, #59402c, #d2a76d);
+}
+
+.instagram-art-table::after {
+  inset-inline: 0;
+  bottom: 0;
+  height: 39%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(72, 40, 20, 0.18)),
+    repeating-linear-gradient(90deg, rgba(85, 49, 24, 0.18) 0 1px, transparent 1px 92px);
+}
+
+.instagram-art-recipe {
+  background: linear-gradient(155deg, #8f1236 0%, #6a0c27 100%);
+}
+
+.instagram-art-recipe::after {
+  right: 9%;
+  bottom: 13%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 38% 42%, #f8e4a9 0 9%, transparent 10%),
+    radial-gradient(circle at 60% 36%, #f0c65d 0 8%, transparent 9%),
+    radial-gradient(circle at 57% 62%, #f8e4a9 0 10%, transparent 11%),
+    #fff9ef;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.instagram-art-sun {
+  background:
+    linear-gradient(180deg, rgba(255, 244, 213, 0.9), rgba(244, 202, 130, 0.72) 48%, #8f1236 100%);
+}
+
+.instagram-art-sun::after {
+  inset-inline: 0;
+  bottom: 0;
+  height: 42%;
+  background: linear-gradient(180deg, transparent, rgba(94, 46, 20, 0.2));
+}
+
+.instagram-art-wheat {
+  background: #8a102f;
+}
+
+.instagram-art-wheat::after {
+  right: 8%;
+  top: 27%;
+  width: 36%;
+  height: 45%;
+  border-radius: 999px 999px 16px 16px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 232, 130, 0.95) 0 12px, rgba(209, 144, 38, 0.95) 12px 22px);
+  transform: rotate(-38deg);
+  opacity: 0.92;
+}
+
+.instagram-poster-logo {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 4;
+  width: 58px;
+  height: 58px;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  background: #0b0908;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+}
+
+.instagram-poster-copy {
+  position: relative;
+  z-index: 3;
+  max-width: 72%;
+  margin-inline-start: auto;
+  padding: 22px 18px 0 0;
+  text-align: right;
+}
+
+.instagram-poster-copy p {
+  margin-bottom: 8px;
+  color: rgba(255, 248, 236, 0.92);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.instagram-poster-copy h3 {
+  display: grid;
+  gap: 2px;
+  color: #fff;
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1.08;
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.34);
+}
+
+.instagram-art-stadium .instagram-poster-copy h3 {
+  color: #ffffff;
+  text-shadow:
+    0 2px 0 #4a22c9,
+    0 0 12px rgba(101, 82, 255, 0.72),
+    0 4px 16px rgba(0, 0, 0, 0.42);
+}
+
+.instagram-products {
+  position: absolute;
+  z-index: 3;
+  inset-inline: 18px;
+  bottom: 50px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  gap: 8px;
+}
+
+.instagram-products-single .instagram-pack {
+  width: min(64%, 220px);
+  aspect-ratio: 1 / 1.18;
+}
+
+.instagram-products-lineup {
+  bottom: 44px;
+  align-items: end;
+  gap: 5px;
+}
+
+.instagram-products-lineup .instagram-pack {
+  width: 20%;
+  aspect-ratio: 1 / 1.12;
+}
+
+.instagram-products-lineup .instagram-pack:nth-child(2),
+.instagram-products-lineup .instagram-pack:nth-child(4) {
+  transform: translateY(-18px);
+}
+
+.instagram-products-dish {
+  inset-inline: auto;
+  left: 12%;
+  bottom: 17%;
+}
+
+.instagram-products-dish .instagram-pack {
+  width: 132px;
+  aspect-ratio: 1 / 1.18;
+  transform: rotate(-12deg);
+}
+
+.instagram-pack {
+  position: relative;
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.26);
+}
+
+.instagram-pack img {
+  object-fit: cover !important;
+  transform: scale(1.08);
+}
+
+.instagram-art-stadium .instagram-products-single .instagram-pack {
+  width: min(52%, 178px);
+}
+
+.instagram-art-quality .instagram-products-single,
+.instagram-art-wheat .instagram-products-single {
+  bottom: 70px;
+}
+
+.instagram-art-table .instagram-products-lineup .instagram-pack,
+.instagram-art-sun .instagram-products-lineup .instagram-pack {
+  width: 21%;
+}
+
+.instagram-dish {
+  position: absolute;
+  z-index: 2;
+  right: 11%;
+  bottom: 15%;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: #fff8ee;
+  box-shadow: 0 22px 38px rgba(0, 0, 0, 0.28);
+}
+
+.instagram-dish span {
+  position: absolute;
+  inset: 18%;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 42% 45%, #f4cc62 0 10%, transparent 11%),
+    radial-gradient(circle at 58% 55%, #f7e4b0 0 13%, transparent 14%),
+    repeating-radial-gradient(circle, #f4da92 0 4px, #fff2c8 4px 9px);
+}
+
+.instagram-protein-badge,
+.instagram-footer-copy {
+  position: absolute;
+  z-index: 4;
+  bottom: 16px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.instagram-protein-badge {
+  right: 16px;
+  border-radius: 999px;
+  background: #5a071d;
+  padding: 9px 12px;
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+}
+
+.instagram-footer-copy {
+  left: 16px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.44);
+}
+
+.instagram-feed-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  color: var(--primary);
+}
+
+.instagram-feed-actions span {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.insta-product-card {
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.insta-product-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid rgba(214, 173, 70, 0.22);
+  background: #15100f;
+  padding: 12px 14px;
+  color: #fff8e8;
+}
+
+.insta-product-media {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(242, 197, 65, 0.24), transparent 38%),
+    linear-gradient(180deg, #211111, #0f0d0c);
+}
+
+.insta-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--primary);
+}
+
+@media (max-width: 900px) {
+  .instagram-section-head {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .instagram-reel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .instagram-poster-copy h3 {
+    font-size: 1.65rem;
+  }
+
+  .social-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .social-card-primary,
+  .social-card-small,
+  .social-card-detail {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 560px) {
+  .instagram-reel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .instagram-section-head h2 {
+    font-size: 2rem;
+  }
+
+  .instagram-poster-copy h3 {
+    font-size: 1.85rem;
+  }
+}
+
+.product-badge {
+  border: 1px solid rgba(214, 173, 70, 0.55);
+  border-radius: 999px;
+  background: rgba(18, 16, 15, 0.72);
+  color: #fff4dc;
+  backdrop-filter: blur(12px);
+}
+
+.gold-panel {
+  border: 1px solid color-mix(in srgb, var(--accent) 52%, var(--border));
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--surface)), var(--surface) 54%),
+    var(--surface);
+}
+
+.metric-card {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, var(--accent)), var(--surface));
+}
+
+.field-control {
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-soft);
+  color: var(--foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

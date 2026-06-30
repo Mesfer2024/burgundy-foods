@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Burgundy Foods
 
-## Getting Started
+موقع Next.js ولوحة تحكم لإدارة عمليات **مؤسسة برغندي للأغذية** (Burgundy Foods Establishment) — مؤسسة سعودية لتجارة وتوزيع المنتجات الغذائية من الرياض: المنتجات، العملاء، الطلبات، المخزون، إعدادات الشركة، ونماذج التواصل وطلبات عروض الأسعار.
 
-First, run the development server:
+- النطاق الرسمي: [www.burgundy-foods.com](https://www.burgundy-foods.com)
+- البريد الرسمي: [info@burgundy-foods.com](mailto:info@burgundy-foods.com)
+- الرقم الوطني الموحد: 7052343444
+
+## التشغيل المحلي
 
 ```bash
+cp .env.example .env
+# عدّل القيم في .env — حدد على وجه الخصوص SEED_ADMIN_PASSWORD بكلمة قوية
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+أمر `npm run dev` ينفذ تلقائياً:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- توليد Prisma Client.
+- تجهيز قاعدة SQLite المحلية في `prisma/dev.db`.
+- زرع بيانات تجريبية أولية (يتطلب `SEED_ADMIN_PASSWORD` في `.env`).
+- تشغيل Next.js على `http://127.0.0.1:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+بيانات دخول لوحة التحكم المحلية تأتي من ملف `.env`:
 
-## Learn More
+- البريد: قيمة `SEED_ADMIN_EMAIL` (الافتراضي: `admin@burgundy-foods.com`)
+- كلمة المرور: قيمة `SEED_ADMIN_PASSWORD` التي ضبطتها في `.env` — السكربت يرفض التشغيل إذا لم تُضبط
+- بعد أول تسجيل دخول، غيّر كلمة المرور من قاعدة البيانات أو واجهة الإدارة
 
-To learn more about Next.js, take a look at the following resources:
+## أوامر مفيدة
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run lint
+npm run build
+npm run setup:local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> ملاحظة: تم ضبط المشروع على SQLite للتطوير المحلي. عند الانتقال للإنتاج (Vercel) يمكن تبديل datasource في `prisma/schema.prisma` إلى PostgreSQL وتحديث `DATABASE_URL`.
 
-## Deploy on Vercel
+## النشر
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. ادفع المستودع إلى GitHub.
+2. اربط المشروع بـ Vercel واضبط متغيرات البيئة الحساسة على المنصة (لا تضعها في الكود):
+   - `DATABASE_URL` (Postgres مُدار، مثل Neon أو Vercel Postgres)
+   - `NEXTAUTH_URL` = `https://www.burgundy-foods.com`
+   - `NEXTAUTH_SECRET` = قيمة عشوائية قوية
+   - `SEED_ADMIN_EMAIL` و `SEED_ADMIN_PASSWORD` (تستخدم مرة واحدة عند تشغيل `prisma db seed` على بيئة الإنتاج، ثم تستبدل كلمة المرور من واجهة الإدارة)
+3. اضبط النطاق `www.burgundy-foods.com` من إعدادات النطاقات في Vercel.
