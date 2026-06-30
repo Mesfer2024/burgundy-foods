@@ -196,6 +196,192 @@ a:focus-visible {
   color: #fff7e9;
 }
 
+/* =================================================================
+   Cinematic layer (cinema-*) — GPU-friendly, no JS animation library.
+   Used by the redesigned home page in app/page.tsx + cinematic
+   client components in components/Cinema*.tsx.
+   ================================================================= */
+
+.cinema-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(214, 173, 70, 0.22), transparent 32%),
+    radial-gradient(circle at 82% 76%, rgba(123, 16, 44, 0.34), transparent 38%),
+    radial-gradient(circle at 50% 50%, rgba(255, 247, 233, 0.04), transparent 50%),
+    linear-gradient(135deg, #0d0807 0%, #1a0c10 45%, #060403 100%);
+  color: #fff7e9;
+}
+
+/* Soft moving god-ray overlay — pure CSS, GPU compositing only */
+.cinema-stage::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(ellipse at center, rgba(214, 173, 70, 0.10) 0%, transparent 55%);
+  filter: blur(40px);
+  animation: cinema-breathe 14s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes cinema-breathe {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  50%      { transform: translate3d(2%, -1%, 0) scale(1.08); opacity: 0.85; }
+}
+
+/* Hero image frame: warm vignette + slow ken-burns */
+.cinema-frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid rgba(214, 173, 70, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6) inset,
+    0 30px 80px -20px rgba(0, 0, 0, 0.7),
+    0 0 40px -8px rgba(214, 173, 70, 0.25);
+  background: #0a0606;
+}
+
+.cinema-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cinema-frame > .cinema-img {
+  position: absolute;
+  inset: 0;
+  animation: cinema-zoom 22s ease-in-out infinite alternate;
+  transform-origin: 55% 45%;
+}
+
+@keyframes cinema-zoom {
+  0%   { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.08) translate3d(-1.2%, 0.6%, 0); }
+}
+
+/* Floating gold particles — three sizes, varied speeds, all CSS */
+.cinema-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cinema-particles span {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(214, 173, 70, 0.85) 0%, rgba(214, 173, 70, 0) 70%);
+  filter: blur(0.5px);
+  animation: cinema-drift linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes cinema-drift {
+  0%   { transform: translate3d(0, 0, 0); opacity: 0; }
+  10%  { opacity: 0.9; }
+  90%  { opacity: 0.6; }
+  100% { transform: translate3d(40px, -120vh, 0); opacity: 0; }
+}
+
+/* Headline reveal — staggered by inline animation-delay */
+.cinema-reveal {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+  transition: opacity 800ms cubic-bezier(0.2, 0.7, 0, 1), transform 800ms cubic-bezier(0.2, 0.7, 0, 1);
+}
+.cinema-reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Premium tilt-on-hover for collection cards (GPU transforms only) */
+.cinema-tilt {
+  transform-style: preserve-3d;
+  transition: transform 600ms cubic-bezier(0.2, 0.7, 0, 1), box-shadow 600ms cubic-bezier(0.2, 0.7, 0, 1);
+  will-change: transform;
+}
+.cinema-tilt:hover {
+  transform: perspective(1200px) rotateX(2deg) rotateY(-4deg) translateY(-6px);
+  box-shadow: 0 36px 80px -22px rgba(0, 0, 0, 0.55), 0 0 60px -16px rgba(214, 173, 70, 0.35);
+}
+
+/* RTL: mirror the rotateY direction */
+[dir="rtl"] .cinema-tilt:hover {
+  transform: perspective(1200px) rotateX(2deg) rotateY(4deg) translateY(-6px);
+}
+
+/* Scroll-down indicator */
+.cinema-scroll-dot {
+  width: 24px;
+  height: 40px;
+  border: 1.5px solid rgba(255, 247, 233, 0.55);
+  border-radius: 999px;
+  position: relative;
+}
+.cinema-scroll-dot::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: cinema-scroll-dot 1.6s ease-in-out infinite;
+}
+@keyframes cinema-scroll-dot {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, 0); }
+  50%      { opacity: 1;   transform: translate(-50%, 14px); }
+}
+
+/* Cinematic narrative band — large headline over warm dark */
+.cinema-band {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(214, 173, 70, 0.10), transparent 50%),
+    linear-gradient(180deg, #110a0c 0%, #1a0d11 60%, #0a0608 100%);
+  color: #fff7e9;
+  overflow: hidden;
+}
+
+.cinema-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 38px,
+    rgba(255, 247, 233, 0.02) 38px,
+    rgba(255, 247, 233, 0.02) 39px
+  );
+  pointer-events: none;
+}
+
+/* Respect reduced-motion preference — disable all the heavy animation */
+@media (prefers-reduced-motion: reduce) {
+  .cinema-stage::before,
+  .cinema-frame > .cinema-img,
+  .cinema-particles span,
+  .cinema-scroll-dot::after {
+    animation: none !important;
+  }
+  .cinema-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 .brand-kicker {
   color: var(--accent);
   font-size: 0.78rem;

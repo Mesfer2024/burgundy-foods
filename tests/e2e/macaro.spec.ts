@@ -42,7 +42,10 @@ test("home page opens without JavaScript console errors", async ({ page, console
   const response = await page.goto("/");
 
   await expectNo404("/", response?.status());
-  await expect(page.getByRole("heading", { name: "Burgundy Foods", exact: true })).toBeVisible();
+  // Cinematic home page headline contains the legal name on the first line —
+  // match the level-1 heading specifically to avoid collisions with H2s that
+  // also include the brand name.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/Burgundy Foods/);
   await expect(page.locator("body")).not.toContainText("404");
 });
 
