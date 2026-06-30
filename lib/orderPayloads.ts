@@ -77,16 +77,29 @@ export function normalizeQuotationLines(lines: unknown): NormalizedQuotationLine
       const line = raw as LinePayload;
       const productId = optionalText(line.productId);
       if (!productId) return null;
+      // Pass values through verbatim; validateQuotationLine() enforces correctness.
       return {
         productId,
-        quantity: Math.max(0, numberValue(line.quantity)),
+        quantity: numberValue(line.quantity),
         quantityType: normalizeQuantityType(line.quantityType),
-        unitPriceBeforeVat: Math.max(0, numberValue(line.unitPriceBeforeVat)),
-        discountAmount: Math.max(0, numberValue(line.discountAmount)),
+        unitPriceBeforeVat: numberValue(line.unitPriceBeforeVat),
+        discountAmount: numberValue(line.discountAmount),
         notes: optionalText(line.notes),
       };
     })
     .filter((line): line is NormalizedQuotationLine => line !== null);
+}
+
+// Returns an Arabic error message string when the line is invalid, otherwise null.
+// Wholesale rule: quantity must be a positive whole number (no decimals, no zero, no negatives).
+export function validateQuotationLine(line: NormalizedQuotationLine): string | null {
+  if (!line.productId) return "المنتج مطلوب لكل بند.";
+  if (!Number.isInteger(line.quantity) || line.quantity < 1) {
+    return "يجب أن تكون الكمية رقماً صحيحاً أكبر من صفر";
+  }
+  if (!(line.unitPriceBeforeVat > 0)) return "سعر الوحدة يجب أن يكون أكبر من صفر.";
+  if (line.discountAmount < 0) return "الخصم لا يمكن أن يكون سالباً.";
+  return null;
 }
 
 export function normalizeSalesOrderLines(lines: unknown): NormalizedSalesOrderLine[] {
